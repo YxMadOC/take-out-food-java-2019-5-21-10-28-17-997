@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.List;
 
 /*
@@ -13,8 +14,77 @@ public class App {
     }
 
     public String bestCharge(List<String> inputs) {
-        //TODO: write code here
+        final List<Item> allItems = itemRepository.findAll();
+        final List<SalesPromotion> salesPromotions = salesPromotionRepository.findAll();
+        final String spiltLine = "-----------------------------------";
+        final String totalWord = "总计：";
+        final String discountWord = "使用优惠:";
+        int minusPrice = 0;
+        int priceOf50_off = 0;
 
-        return null;
+        List<String> minusList = new ArrayList<>();
+        for (String n : inputs) {
+            String[] itemAndNumber = n.split(" x ");
+            String itemId = itemAndNumber[0];
+            Integer itemNumber = Integer.valueOf(itemAndNumber[1]);
+            for (Item currentItem : allItems) {
+                if (itemId.equals(currentItem.getId())) {
+                    minusList.add(currentItem.getName() + " x " + itemNumber + " = " + (int)(itemNumber * currentItem.getPrice()) + "元");
+                    minusPrice += itemNumber * currentItem.getPrice();
+                }
+            }
+        }
+        if(minusPrice >= 30){
+            minusList.add(spiltLine);
+            minusList.add(discountWord);
+            minusList.add(salesPromotions.get(0).getDisplayName() + "，省" + (minusPrice / 30) * 6 + "元");
+            minusPrice -= (minusPrice / 30) * 6;
+        }
+        minusList.add(spiltLine);
+        minusList.add(totalWord + minusPrice + "元");
+
+        List<String> discountName = new ArrayList<>();
+        int discountPrice = 0;
+
+        List<String> listOf50_off = new ArrayList<>();
+        for(String n : inputs) {
+            String[] itemAndNumber = n.split(" x ");
+            String itemId = itemAndNumber[0];
+            Integer itemNumber = Integer.valueOf(itemAndNumber[1]);
+
+            String currentName = "";
+            int currentPrice = 0;
+            for (Item currentItem : allItems) {
+                if (itemId.equals(currentItem.getId())) {
+                    listOf50_off.add(currentItem.getName() + " x " + itemNumber + " = " + (int)(itemNumber * currentItem.getPrice()) + "元");
+                    priceOf50_off += itemNumber * currentItem.getPrice();
+                    currentName = currentItem.getName();
+                    currentPrice = (int)currentItem.getPrice();
+                }
+            }
+
+            if (salesPromotions.get(1).getRelatedItems().contains(itemId)) {
+                priceOf50_off -= currentPrice * itemNumber / 2;
+                discountName.add(currentName);
+                discountPrice += currentPrice * itemNumber / 2;
+            }
+        }
+
+        listOf50_off.add(spiltLine);
+        listOf50_off.add(discountWord);
+        listOf50_off.add(salesPromotions.get(1).getDisplayName() + "(" + String.join("，", discountName) + ")，省" + discountPrice + "元");
+        listOf50_off.add(spiltLine);
+        listOf50_off.add(totalWord + priceOf50_off + "元");
+
+        List<String> resultList;
+        if(priceOf50_off < minusPrice) {
+            resultList = listOf50_off;
+        }else{
+            resultList = minusList;
+        }
+
+        resultList.add(0, "============= 订餐明细 =============");
+        resultList.add("===================================");
+        return String.join("\n", resultList);
     }
 }
